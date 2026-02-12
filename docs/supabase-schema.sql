@@ -140,3 +140,22 @@ CREATE TABLE IF NOT EXISTS journal (
   content TEXT NOT NULL,
   meta JSONB
 );
+
+-- 11. Trading Universe (AI-focused stock discovery)
+CREATE TABLE trading_universe (
+  ticker TEXT PRIMARY KEY,
+  company_name TEXT,
+  sector TEXT,
+  category TEXT,             -- 'ai_chip', 'ai_software', 'ai_cloud', 'ai_infrastructure', 'ai_beneficiary'
+  score INT,                 -- 0-100 theme relevance score
+  is_active BOOLEAN DEFAULT TRUE,
+  last_scanned TIMESTAMPTZ,
+  last_mention TIMESTAMPTZ,  -- Last theme keyword mention in news
+  notes TEXT,                -- Curator's reasoning
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  deactivated_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_trading_universe_active ON trading_universe(is_active);
+CREATE INDEX idx_trading_universe_category ON trading_universe(category);
+CREATE INDEX idx_trading_universe_score ON trading_universe(score DESC);

@@ -67,7 +67,7 @@ def api_refresh():
 @bp.route('/api/export')
 def api_export():
     """Export filtered data as CSV"""
-    data = get_cached_data()
+    data = get_latest_scan()
     if data is None:
         return jsonify({'error': 'Failed to fetch data'}), 500
     
