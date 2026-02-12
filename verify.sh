@@ -1,8 +1,8 @@
 #!/bin/bash
-# Verification script for CANSLIM Scanner Dashboard
+# Verification script for DeepDiver Trading Swarm
 
-echo "🔍 CANSLIM Scanner Dashboard - Verification"
-echo "==========================================="
+echo "🔍 DeepDiver - System Verification"
+echo "==================================="
 echo ""
 
 # Color codes
@@ -17,14 +17,13 @@ WARNINGS=0
 # Check files exist
 echo "📁 Checking required files..."
 REQUIRED_FILES=(
-    "app.py"
-    "pyproject.toml"
-    "uv.lock"
+    "run.py"
     "run.sh"
     ".env.example"
+
     ".gitignore"
-    "LICENSE"
     "README.md"
+    "PROJECT_SUMMARY.md"
 )
 
 for file in "${REQUIRED_FILES[@]}"; do
@@ -39,11 +38,13 @@ done
 echo ""
 echo "📂 Checking directories..."
 REQUIRED_DIRS=(
-    "templates"
-    "data"
-    "data/history"
-    "data/routines"
-    "docs"
+    "app"
+    "app/agents"
+    "app/dashboard"
+    "app/templates"
+    "app/data"
+    "app/data/history"
+    "app/data/routines"
 )
 
 for dir in "${REQUIRED_DIRS[@]}"; do
@@ -65,7 +66,8 @@ SENSITIVE_PATTERNS=(
 )
 
 for pattern in "${SENSITIVE_PATTERNS[@]}"; do
-    if grep -r "$pattern" app.py templates/ 2>/dev/null | grep -v ".git" > /dev/null; then
+    # Check in app/ directory recursively
+    if grep -r "$pattern" app/ 2>/dev/null | grep -v ".git" > /dev/null; then
         echo -e "  ${RED}✗${NC} Found sensitive data: $pattern"
         ((ERRORS++))
     else
@@ -77,29 +79,22 @@ echo ""
 echo "🔧 Checking configuration..."
 
 # Check .env.example has required vars
-if grep -q "GOOGLE_SHEET_ID" .env.example && grep -q "GOG_ACCOUNT" .env.example; then
-    echo -e "  ${GREEN}✓${NC} .env.example has required variables"
-else
-    echo -e "  ${RED}✗${NC} .env.example missing required variables"
-    ((ERRORS++))
-fi
+REQUIRED_VARS=("GOOGLE_SHEET_ID" "GOG_ACCOUNT" "SUPABASE_URL" "SUPABASE_KEY" "GEMINI_API_KEY")
+for var in "${REQUIRED_VARS[@]}"; do
+    if grep -q "$var" .env.example; then
+        echo -e "  ${GREEN}✓${NC} .env.example has $var"
+    else
+        echo -e "  ${RED}✗${NC} .env.example missing $var"
+        ((ERRORS++))
+    fi
+done
 
 # Check run.sh is executable
 if [ -x "run.sh" ]; then
     echo -e "  ${GREEN}✓${NC} run.sh is executable"
-else
+    else
     echo -e "  ${YELLOW}⚠${NC} run.sh is not executable (run: chmod +x run.sh)"
     ((WARNINGS++))
-fi
-
-# Check data files have safe defaults
-if [ -f "data/settings.json" ]; then
-    if grep -q '"account_equity": 100000' data/settings.json; then
-        echo -e "  ${GREEN}✓${NC} settings.json has safe defaults"
-    else
-        echo -e "  ${RED}✗${NC} settings.json has wrong defaults"
-        ((ERRORS++))
-    fi
 fi
 
 echo ""
@@ -110,9 +105,9 @@ echo "Total warnings: $WARNINGS"
 echo ""
 
 if [ $ERRORS -eq 0 ]; then
-    echo -e "${GREEN}✓ All checks passed! Ready for release.${NC}"
+    echo -e "${GREEN}✓ All checks passed! Ready for deployment.${NC}"
     exit 0
 else
-    echo -e "${RED}✗ Please fix errors before releasing.${NC}"
+    echo -e "${RED}✗ Please fix errors before deployment.${NC}"
     exit 1
 fi

@@ -25,4 +25,5 @@ mkdir -p data/history data/routines
 # Run the app using uv
 PORT=${PORT:-5561}
 echo "Starting CANSLIM Scanner Dashboard on http://localhost:$PORT"
-uv run app.py
+uv run run.py
+
