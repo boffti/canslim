@@ -607,11 +607,6 @@ For production deployment:
 
 ## Known Issues
 
-**run.sh outdated:**
-- Script validates Google Sheets environment variables that are no longer used
-- These validations should be removed
-- File: `run.sh` lines 10-20
-
 **routes.py references non-existent function:**
 - `api_export()` calls `get_cached_data()` which doesn't exist in utils.py
 - Should be replaced with `get_latest_scan()`
@@ -621,8 +616,3 @@ For production deployment:
 - `app/data/` directory is created but not actively used
 - Some utility functions reference it for backwards compatibility
 - Can be safely removed in future cleanup
-
-**Routine loading functions:**
-- `load_routine()` is called but imports show `get_routine()`
-- File: `app/dashboard/routes.py` lines 232, 239, 279, 284
-- Should be updated to use consistent naming
