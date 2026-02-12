@@ -19,6 +19,9 @@ from dotenv import load_dotenv
 import sys
 import os
 
+# Ensure project root is on sys.path so `app` is importable
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 def load_russell3000(csv_path='data/russell3000_holdings.csv'):
     """Load Russell 3000 stocks from iShares CSV into trading_universe table."""
@@ -85,7 +88,13 @@ def load_russell3000(csv_path='data/russell3000_holdings.csv'):
             print("❌ Error: No valid stocks found in CSV")
             return False
 
-        print(f"✓ Prepared {len(stocks_to_insert)} stocks for insertion")
+        # Deduplicate by ticker (keep last occurrence)
+        seen = {}
+        for stock in stocks_to_insert:
+            seen[stock['ticker']] = stock
+        stocks_to_insert = list(seen.values())
+
+        print(f"✓ Prepared {len(stocks_to_insert)} stocks for insertion (after dedup)")
 
         # Batch insert to Supabase (1000 rows at a time)
         total = len(stocks_to_insert)
@@ -95,9 +104,9 @@ def load_russell3000(csv_path='data/russell3000_holdings.csv'):
         try:
             for i in range(0, total, batch_size):
                 batch = stocks_to_insert[i:i+batch_size]
-                supabase.table('trading_universe').insert(batch).execute()
+                supabase.table('trading_universe').upsert(batch, on_conflict='ticker').execute()
                 inserted += len(batch)
-                print(f"✓ Inserted batch {i//batch_size + 1}: {len(batch)} stocks ({inserted}/{total})")
+                print(f"✓ Upserted batch {i//batch_size + 1}: {len(batch)} stocks ({inserted}/{total})")
         except Exception as e:
             print(f"❌ Error inserting data: {e}")
             print(f"Successfully inserted {inserted} stocks before error")
