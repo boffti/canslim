@@ -12,7 +12,7 @@ from app.agents.tools import (
     check_alerts,
     add_to_watchlist,
 )
-from app.agents.prompts import WILSON_SYSTEM_PROMPT
+from app.agents.wilson.prompt import WILSON_SYSTEM_PROMPT
 
 # Configure LiteLlm for OpenRouter
 openrouter_key = os.environ.get("OPENROUTER_API_KEY")
@@ -26,7 +26,7 @@ model = LiteLlm(
 )
 
 # Define the Orchestrator
-wilson = Agent(
+root_agent = wilson = Agent(
     name="Wilson",
     model=model,
     description="Lead trader agent for autonomous CANSLIM market analysis and trade execution",

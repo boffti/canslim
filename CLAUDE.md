@@ -55,6 +55,36 @@ uv lock --upgrade-package package-name
 
 Dependencies are defined in `pyproject.toml`, NOT `requirements.txt`.
 
+### Testing Agents with ADK Dev UI
+
+The ADK web UI lets you interactively chat with Wilson and Curator agents in a browser.
+
+```bash
+# Run from project root — PYTHONPATH is required so `app` package is importable
+PYTHONPATH=/Users/aneesh/Documents/workspace/canslim uv run adk web app/agents
+```
+
+Opens at **http://localhost:8000**. Select `wilson` or `curator` from the dropdown.
+
+**Agent package structure** (`app/agents/wilson/` and `app/agents/curator/`):
+```
+app/agents/
+    wilson/
+        __init__.py   # from . import agent
+        agent.py      # defines root_agent (Wilson)
+        prompt.py     # Wilson's system prompt
+    curator/
+        __init__.py   # from . import agent
+        agent.py      # defines root_agent (Curator)
+        prompt.py     # Curator's system prompt
+        tools.py      # Curator-specific tools
+```
+
+**Rules for agent files under `app/agents/wilson/` and `app/agents/curator/`:**
+- All imports must be **absolute** (e.g. `from app.agents.tools import ...`) — no relative imports (`from .x` or `from ..x`) since ADK loads each agent as a top-level package
+- The agent variable must be named `root_agent` (or aliased: `root_agent = wilson = Agent(...)`)
+- `PYTHONPATH` must point to the project root so `app` is resolvable
+
 ### Verification
 
 ```bash

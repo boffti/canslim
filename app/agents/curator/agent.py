@@ -10,21 +10,13 @@ from google.adk.agents import Agent
 from google.adk.models import LiteLlm
 
 # Import Curator's tools
-from app.agents.curator_tools import (
-    scan_stock_for_ai,
-    update_trading_universe,
-    get_trading_universe
-)
+from app.agents.curator.tools import scan_stock_for_ai, update_trading_universe, get_trading_universe
 
 # Import shared tools (reused from Wilson)
-from app.agents.tools import (
-    log_journal,
-    add_to_watchlist,
-    fetch_market_data
-)
+from app.agents.tools import log_journal, add_to_watchlist, fetch_market_data
 
 # Import system prompt
-from app.agents.prompts import CURATOR_SYSTEM_PROMPT
+from app.agents.curator.prompt import CURATOR_SYSTEM_PROMPT
 
 
 # Configure LiteLlm for OpenRouter (same as Wilson)
@@ -37,7 +29,7 @@ model = LiteLlm(
 )
 
 # Define Curator Agent
-curator = Agent(
+root_agent = curator = Agent(
     name="Curator",
     model=model,
     description="AI Stock Universe Manager for DeepDiver trading system",
@@ -50,6 +42,6 @@ curator = Agent(
         # Shared tools (3 reused from Wilson)
         log_journal,
         add_to_watchlist,
-        fetch_market_data
-    ]
+        fetch_market_data,
+    ],
 )
