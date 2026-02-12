@@ -23,7 +23,7 @@ REQUIRED_FILES=(
 
     ".gitignore"
     "README.md"
-    "PROJECT_SUMMARY.md"
+    "docs/PROJECT_SUMMARY.md"
 )
 
 for file in "${REQUIRED_FILES[@]}"; do
@@ -58,28 +58,49 @@ done
 
 echo ""
 echo "🔒 Checking for sensitive data..."
-SENSITIVE_PATTERNS=(
-    "1aFUHj4TsRCcUTQqXD6wfV6Jbi8uyJ1fhuFKouVEhdA4"
-    "google-sheet@openclaw-gmail"
-    "535000"
-    "/Users/michaelgranit/"
+
+# Check for hardcoded API keys (patterns indicating credentials in code)
+echo -e "  Checking for hardcoded credentials..."
+CREDENTIAL_PATTERNS=(
+    'ALPACA_API_KEY\s*=\s*["\047][A-Z0-9]'
+    'ALPACA_SECRET_KEY\s*=\s*["\047][A-Z0-9]'
+    'FINNHUB_API_KEY\s*=\s*["\047][a-z0-9]'
+    'SUPABASE_KEY\s*=\s*["\047]'
+    'OPENROUTER_API_KEY\s*=\s*["\047]'
+    'supabase_key\s*=\s*["\047]'
+    'api_key\s*=\s*["\047][A-Z0-9]{20,}'
 )
 
-for pattern in "${SENSITIVE_PATTERNS[@]}"; do
-    # Check in app/ directory recursively
-    if grep -r "$pattern" app/ 2>/dev/null | grep -v ".git" > /dev/null; then
-        echo -e "  ${RED}✗${NC} Found sensitive data: $pattern"
+FOUND_HARDCODED=false
+for pattern in "${CREDENTIAL_PATTERNS[@]}"; do
+    if grep -rE "$pattern" app/ 2>/dev/null | grep -v ".git" | grep -v ".pyc" > /dev/null; then
+        echo -e "  ${RED}✗${NC} Found hardcoded credential pattern in app/"
+        grep -rE "$pattern" app/ 2>/dev/null | grep -v ".git" | grep -v ".pyc" | head -3
+        FOUND_HARDCODED=true
         ((ERRORS++))
-    else
-        echo -e "  ${GREEN}✓${NC} No $pattern found"
+        break
     fi
 done
+
+if [ "$FOUND_HARDCODED" = false ]; then
+    echo -e "  ${GREEN}✓${NC} No hardcoded credentials found"
+fi
+
+# Check for absolute paths to user directories
+echo -e "  Checking for hardcoded file paths..."
+if grep -rE "/Users/[a-zA-Z]+/" app/ 2>/dev/null | grep -v ".git" | grep -v ".pyc" > /dev/null; then
+    echo -e "  ${YELLOW}⚠${NC} Found hardcoded file paths (should use relative paths)"
+    grep -rE "/Users/[a-zA-Z]+/" app/ 2>/dev/null | grep -v ".git" | grep -v ".pyc" | head -3
+    ((WARNINGS++))
+else
+    echo -e "  ${GREEN}✓${NC} No hardcoded file paths found"
+fi
 
 echo ""
 echo "🔧 Checking configuration..."
 
 # Check .env.example has required vars
-REQUIRED_VARS=("GOOGLE_SHEET_ID" "GOG_ACCOUNT" "SUPABASE_URL" "SUPABASE_KEY" "GEMINI_API_KEY")
+REQUIRED_VARS=("ALPACA_API_KEY" "ALPACA_SECRET_KEY" "FINNHUB_API_KEY" "SUPABASE_URL" "SUPABASE_KEY" "OPENROUTER_API_KEY")
 for var in "${REQUIRED_VARS[@]}"; do
     if grep -q "$var" .env.example; then
         echo -e "  ${GREEN}✓${NC} .env.example has $var"
