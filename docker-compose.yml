@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  deepdiver:
+    build: .
+    container_name: deepdiver
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=development
+      - PORT=8080
+    volumes:
+      # Mount code for hot reload during development
+      - ./app:/app/app
+      - ./run.py:/app/run.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
