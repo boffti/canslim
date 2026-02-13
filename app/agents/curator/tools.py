@@ -283,7 +283,7 @@ def _llm_validation(ticker: str, stage1_result: dict, edgar_data: dict) -> dict:
     """
     from openai import OpenAI
 
-    SAFE_DEFAULT = {
+    safe_default = {
         "involvement_level": "use_ai",
         "category": stage1_result.get("category", "ai_beneficiary"),
         "adjusted_score": stage1_result["score"],
@@ -292,7 +292,7 @@ def _llm_validation(ticker: str, stage1_result: dict, edgar_data: dict) -> dict:
 
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     if not openrouter_key:
-        return SAFE_DEFAULT
+        return safe_default
 
     edgar_snippets = "\n".join(edgar_data.get("snippets", [])[:3]) or "No SEC filings found."
     edgar_count = edgar_data.get("count", 0)
@@ -347,9 +347,16 @@ Return ONLY valid JSON, no markdown:
 
         # Strip markdown code fences if present
         if raw.startswith("```"):
-            raw = raw.split("```")[1]
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else raw
             if raw.startswith("json"):
-                raw = raw[4:]
+                raw = raw[4:].lstrip()
+
+        # Extract JSON object region robustly (handles leading/trailing text)
+        start_idx = raw.find("{")
+        end_idx = raw.rfind("}")
+        if start_idx >= 0 and end_idx > start_idx:
+            raw = raw[start_idx:end_idx + 1]
 
         result = json.loads(raw)
 
@@ -358,14 +365,14 @@ Return ONLY valid JSON, no markdown:
 
         return {
             "involvement_level": result.get("involvement_level") if result.get("involvement_level") in valid_levels else "use_ai",
-            "category": result.get("category") if result.get("category") in valid_categories else SAFE_DEFAULT["category"],
-            "adjusted_score": max(0, min(100, int(result.get("adjusted_score", stage1_result["score"])))),
+            "category": result.get("category") if result.get("category") in valid_categories else safe_default["category"],
+            "adjusted_score": max(0, min(100, int(result.get("adjusted_score", stage1_result.get("score", 50))))),
             "reasoning": str(result.get("reasoning", ""))[:500],
         }
 
     except Exception as e:
-        SAFE_DEFAULT["reasoning"] = f"LLM error: {str(e)[:100]}"
-        return SAFE_DEFAULT
+        safe_default["reasoning"] = f"LLM error: {str(e)[:100]}"
+        return safe_default
 
 
 def _update_trading_universe(ticker: str, data_json: str) -> str:
