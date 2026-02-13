@@ -45,6 +45,68 @@ AI_KEYWORDS = {
 }
 
 
+def _fetch_edgar_ai_mentions(ticker: str, company_name: str) -> dict:
+    """Fetch AI-related mentions from SEC EDGAR 10-K filings (free, no API key).
+
+    Uses EDGAR full-text search to find 'artificial intelligence' in recent
+    10-K filings. Snippets reveal whether AI is mentioned in R&D, product,
+    or operations context.
+
+    Args:
+        ticker: Stock symbol (used as fallback label only)
+        company_name: Company name for EDGAR entity search
+
+    Returns:
+        dict with:
+            count (int): Number of filing hits
+            snippets (list[str]): Up to 5 text snippets from filings
+            error (str): Error message if request failed (optional)
+    """
+    import urllib.parse
+
+    base_url = "https://efts.sec.gov/LATEST/search-index"
+    params = {
+        "q": '"artificial intelligence" OR "machine learning" OR "generative AI"',
+        "forms": "10-K",
+        "dateRange": "custom",
+        "startdt": "2023-01-01",
+        "enddt": "2026-12-31",
+        "entity": company_name,
+    }
+
+    try:
+        url = f"{base_url}?{urllib.parse.urlencode(params)}"
+        response = requests.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "DeepDiver/1.0 research@example.com"}
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        hits = data.get("hits", {}).get("hits", [])
+        total = data.get("hits", {}).get("total", {}).get("value", 0)
+
+        snippets = []
+        for hit in hits[:5]:
+            highlights = hit.get("highlight", {}).get("file_contents", [])
+            if highlights:
+                snippet = highlights[0].replace("<em>", "").replace("</em>", "")
+                snippets.append(snippet[:300])
+
+        return {
+            "count": total,
+            "snippets": snippets,
+        }
+
+    except Exception as e:
+        return {
+            "count": 0,
+            "snippets": [],
+            "error": str(e),
+        }
+
+
 def _scan_stock_for_ai(ticker: str) -> str:
     """Scans a stock for AI involvement using 2-stage detection.
 
